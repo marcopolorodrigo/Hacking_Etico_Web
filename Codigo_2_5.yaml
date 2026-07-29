@@ -1,0 +1,20 @@
+# security-policy.yaml
+version: "2.0"
+rules:
+  - id: no-eval
+    description: "Prohibido el uso de eval() o exec()"
+    severity: CRITICAL
+    pattern: "eval("
+    action: BLOCK
+    suggestion: "Usar ast.literal_eval() o funciones seguras"
+  - id: parameterized-queries
+    description: "Todas las consultas SQL deben ser parametrizadas"
+    severity: HIGH
+    pattern: "cursor.execute(f\"SELECT ...\")"
+    action: SUGGEST_FIX
+    suggestion: "Usar cursor.execute('SELECT * FROM users WHERE id = %s', (user_id,))"
+  - id: crypto-strong
+    description: "Usar solo algoritmos criptográficos fuertes (AES-256, ChaCha20)"
+    severity: MEDIUM
+    pattern: "DES|3DES|MD5|SHA1"
+    action: WARN
