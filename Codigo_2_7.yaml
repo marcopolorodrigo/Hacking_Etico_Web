@@ -1,0 +1,35 @@
+# .github/workflows/security-scan.yml
+name: Security Pipeline v2.0
+
+on: [push, pull_request]
+
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Scan for secrets (TruffleHog)
+        run: |
+          docker run --rm -v "$PWD:/src" trufflesecurity/trufflehog:latest git file:///src
+      
+      - name: SBOM Generation and Verification
+        run: |
+          pip install cyclonedx-bom
+          cyclonedx-bom -o bom.json
+          python verify_sbom.py bom.json
+      
+      - name: SAST with Semgrep (LLM-enhanced)
+        run: |
+          pip install semgrep
+          semgrep --config p/security-audit --config p/owasp-top-ten --config policies/security-policy.yaml
+      
+      - name: Container Image Scan (Trivy)
+        run: |
+          docker build -t app:latest .
+          trivy image --severity HIGH,CRITICAL app:latest
+      
+      - name: AI Model Scan (Garak)
+        run: |
+          pip install garak
+          garak --model_type huggingface --model_name user/model --probe_list "promptinject"
